@@ -47,7 +47,7 @@ export function ConnectWallet() {
     <button
       className="btn-primary"
       disabled={isPending}
-      onClick={() => connect({ connector: injected() })}
+      onClick={() => connect({ connector: injected(), chainId: baseSepolia.id })}
     >
       {isPending ? "Connecting..." : "Connect Wallet"}
     </button>
