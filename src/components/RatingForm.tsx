@@ -1,13 +1,9 @@
-"use client";
-
 import { useState } from "react";
 import { useAccount, useWriteContract } from "wagmi";
 import { createPublicClient, createWalletClient, custom, http } from "viem";
 import { baseSepolia as viemBaseSepolia } from "viem/chains";
-import { createCofheClient, createCofheConfig } from "@cofhe/sdk/web";
-import { Encryptable, EncryptStep } from "@cofhe/sdk";
-import { baseSepolia } from "@cofhe/sdk/chains";
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from "@/lib/contract";
+import { Lock, ShieldCheck, Loader2, CheckCircle2, Star } from "lucide-react";
 
 export function RatingForm({ hasRated }: { hasRated: boolean }) {
   const { address, isConnected } = useAccount();
@@ -35,7 +31,6 @@ export function RatingForm({ hasRated }: { hasRated: boolean }) {
       setStatus("encrypting");
       setErrorMsg("");
 
-      // Create viem clients directly from window.ethereum
       const pc = createPublicClient({ chain: viemBaseSepolia, transport: http() });
       const wc = createWalletClient({
         chain: viemBaseSepolia,
@@ -43,11 +38,14 @@ export function RatingForm({ hasRated }: { hasRated: boolean }) {
         account: address,
       });
 
+      const { createCofheClient, createCofheConfig } = await import("@cofhe/sdk/web");
+      const { Encryptable } = await import("@cofhe/sdk");
+      const { baseSepolia } = await import("@cofhe/sdk/chains");
+
       const config = createCofheConfig({ supportedChains: [baseSepolia], fheKeyStorage: null });
       const cofhe = createCofheClient(config);
       await cofhe.connect(pc as any, wc as any);
 
-      // Encrypt the rating (1-5)
       const [encryptedRating] = await cofhe
         .encryptInputs([Encryptable.uint8(BigInt(selected))])
         .execute();
@@ -59,7 +57,9 @@ export function RatingForm({ hasRated }: { hasRated: boolean }) {
         abi: CONTRACT_ABI,
         functionName: "submitRating",
         args: [encryptedRating as any],
-      });
+        chain: viemBaseSepolia,
+        account: address,
+      } as any);
 
       setStatus("success");
     } catch (err: any) {
@@ -70,29 +70,33 @@ export function RatingForm({ hasRated }: { hasRated: boolean }) {
 
   if (!isConnected) {
     return (
-      <div className="card">
-        <p style={{ textAlign: "center" }}>Connect your wallet to rate.</p>
+      <div className="glass rounded-xl p-8 text-center">
+        <Lock className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+        <p className="text-muted-foreground">Connect your wallet to rate.</p>
       </div>
     );
   }
 
   if (hasRated) {
     return (
-      <div className="card" style={{ textAlign: "center" }}>
-        <div className="badge badge-success" style={{ margin: "0 auto" }}>
-          Already rated
-        </div>
-        <p style={{ marginTop: "0.75rem" }}>You already submitted your rating. Thank you!</p>
+      <div className="glass rounded-xl p-8 text-center space-y-3">
+        <ShieldCheck className="w-10 h-10 text-primary mx-auto" />
+        <h3 className="text-lg font-heading font-semibold">Already rated</h3>
+        <p className="text-sm text-muted-foreground">
+          You already submitted your encrypted rating. Thank you!
+        </p>
       </div>
     );
   }
 
   if (status === "success") {
     return (
-      <div className="card" style={{ textAlign: "center" }}>
-        <div style={{ fontSize: "2.5rem" }}>🎉</div>
-        <h2 style={{ marginTop: "0.5rem" }}>Rating submitted!</h2>
-        <p>Your encrypted rating was added anonymously.</p>
+      <div className="glass rounded-xl p-8 text-center space-y-4 glow-primary">
+        <div className="text-5xl animate-float">🎉</div>
+        <h3 className="text-xl font-heading font-bold text-primary">Rating submitted!</h3>
+        <p className="text-sm text-muted-foreground">
+          Your encrypted rating was added anonymously.
+        </p>
       </div>
     );
   }
@@ -101,48 +105,70 @@ export function RatingForm({ hasRated }: { hasRated: boolean }) {
   const display = hovered || selected;
 
   return (
-    <div className="card">
-      <h2>Submit your rating</h2>
-      <p>Your rating is encrypted — no one can see what you chose.</p>
+    <div className="glass rounded-xl p-8 space-y-6">
+      <div className="text-center space-y-2">
+        <h3 className="text-xl font-heading font-bold">Submit your rating</h3>
+        <p className="text-sm text-muted-foreground">
+          Your rating is encrypted — no one can see what you chose.
+        </p>
+      </div>
 
-      <div className="stars">
+      {/* Star selector */}
+      <div className="flex justify-center gap-2">
         {[1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
-            className={`star ${display >= star ? "active" : ""}`}
             onMouseEnter={() => setHovered(star)}
             onMouseLeave={() => setHovered(0)}
             onClick={() => setSelected(star)}
             disabled={isLoading}
+            className="group transition-all duration-200 disabled:opacity-50"
           >
-            ★
+            <Star
+              className={`w-10 h-10 transition-all duration-200 ${
+                display >= star
+                  ? "fill-star text-star glow-star drop-shadow-lg scale-110"
+                  : "text-muted-foreground/40 hover:text-muted-foreground/60"
+              }`}
+            />
           </button>
         ))}
       </div>
 
       {selected > 0 && (
-        <p style={{ textAlign: "center", marginBottom: "1rem" }}>
+        <p className="text-center text-sm font-medium text-star">
           {selected} star{selected > 1 ? "s" : ""} selected
         </p>
       )}
 
       <button
-        className="btn-primary"
         onClick={handleSubmit}
         disabled={selected === 0 || isLoading}
+        className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-lg bg-primary text-primary-foreground font-semibold hover:brightness-110 transition-all glow-primary disabled:opacity-40 disabled:shadow-none"
       >
-        {status === "encrypting"
-          ? "Encrypting..."
-          : status === "submitting"
-          ? "Submitting..."
-          : "Submit (encrypted)"}
+        {isLoading ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            {status === "encrypting" ? "Encrypting..." : "Submitting..."}
+          </>
+        ) : (
+          <>
+            <ShieldCheck className="w-4 h-4" />
+            Submit (encrypted)
+          </>
+        )}
       </button>
 
-      <div className="lock-icon">
+      <p className="text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
+        <Lock className="w-3 h-3" />
         Your rating is encrypted with FHE before leaving your device
-      </div>
+      </p>
 
-      {status === "error" && <div className="msg msg-error">{errorMsg}</div>}
+      {status === "error" && (
+        <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3">
+          <p className="text-sm text-destructive">{errorMsg}</p>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,9 +1,5 @@
-export const CONTRACT_ADDRESS = (
-  process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ||
-  "0x0000000000000000000000000000000000000000"
-) as `0x${string}`;
+export const CONTRACT_ADDRESS = "0x62A48598c09B10c2Befc317007aF9569482158F2" as `0x${string}`;
 
-// InEuint8 struct from @fhenixprotocol/cofhe-contracts
 const InEuint8 = {
   components: [
     { name: "ctHash", type: "uint256" },
