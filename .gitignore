@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Hardhat
+artifacts/
+cache/
+typechain-types/
+
+# Environment (IMPORTANT: never push this)
+.env
+.env.local
+.env.production
+
+# Misc
+.DS_Store
+*.log
+*.tsbuildinfo
+.claude/
