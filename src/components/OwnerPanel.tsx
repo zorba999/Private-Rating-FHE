@@ -50,9 +50,13 @@ export function OwnerPanel({
       });
 
       const handleBigInt = BigInt(handle as string);
+
+      // Generate or retrieve an existing self-permit (triggers wallet signature if new)
+      const permit = await cofhe.permits.getOrCreateSelfPermit();
+
       const unsealed = await cofhe
         .decryptForView(handleBigInt, FheTypes.Uint32)
-        .withPermit()
+        .setPermit(permit)
         .execute();
 
       const total = Number(unsealed);
